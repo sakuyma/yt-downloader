@@ -1,0 +1,8 @@
+[package]
+name = "yt-downloader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+yt-dlp = "1.4.7"
+tokio = { version = "1.49.0", features = ["full"] }

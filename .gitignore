@@ -1,0 +1,22 @@
+# Rust specific
+**/*.rs.bk
+target/
+
+# Program files
+output/
+libs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temp files and logs
+*.log
+tmp/
