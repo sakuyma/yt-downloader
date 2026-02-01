@@ -1,8 +1,11 @@
 [package]
 name = "yt-downloader"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 yt-dlp = "1.4.7"
 tokio = { version = "1.49.0", features = ["full"] }
+clap = { version = "4.5.56", features = ["derive"] }
+chrono = "0.4.43"
+which = "8.0"
