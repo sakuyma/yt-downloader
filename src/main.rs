@@ -123,14 +123,14 @@ async fn main() {
         };
 
         if url.is_empty() {
-            eprintln!("❌ URL cannot be empty");
+            eprintln!("URL cannot be empty");
             return;
         }
 
         // Download video
         match download_video(url, cli.output_dir, cli.filename).await {
-            Ok(_) => println!("🎉 Download Complete!"),
-            Err(e) => eprintln!("❌ Error: {}", e),
+            Ok(_) => println!("Download Complete!"),
+            Err(e) => eprintln!("Error: {}", e),
         }
     } else {
         // Show help
