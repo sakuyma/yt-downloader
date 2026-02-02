@@ -19,7 +19,7 @@ struct Cli {
     download: bool,
 
     // Output dir
-    #[arg(short = 'o', long = "output", default_value = "Downloads")]
+    #[arg(short = 'o', long = "output", default_value = "~/Downloads")]
     output_dir: PathBuf,
 
     // Filename
@@ -27,29 +27,19 @@ struct Cli {
     filename: Option<String>,
 }
 
-// func for finding system binaries
-fn find_system_binaries(name: &str) -> Option<PathBuf> {
-    match which(name) {
-        Ok(path) => Some(path),
-        Err(_) => {
-            eprintln!("{} not found in PATH", name);
-            None
-        }
-    }
+// func for check finding system binaries
+fn check_dependencies() -> Result<(PathBuf, PathBuf), String> {
+    let yt_dlp = which("yt-dlp").map_err(|_| "yt-dlp not found in system PATH".to_string())?;
+
+    let ffmpeg = which("ffmpeg").map_err(|_| "ffmpeg not found in system PATH".to_string())?;
+
+    Ok((yt_dlp, ffmpeg))
 }
 
-fn check_dependencies() -> bool {
-    let yt_dlp = find_system_binaries("yt-dlp");
-    let ffmpeg = find_system_binaries("ffmpeg");
-
-    yt_dlp.is_some() && ffmpeg.is_some()
-}
 fn get_dependency_paths() -> Result<(PathBuf, PathBuf), String> {
-    let yt_dlp = find_system_binaries("yt-dlp")
-        .ok_or_else(|| "yt-dlp not found in system PATH".to_string())?;
+    let yt_dlp = which("yt-dlp").map_err(|_| "yt-dlp not found in system PATH".to_string())?;
 
-    let ffmpeg = find_system_binaries("ffmpeg")
-        .ok_or_else(|| "ffmpeg not found in system PATH".to_string())?;
+    let ffmpeg = which("ffmpeg").map_err(|_| "ffmpeg not found in system PATH".to_string())?;
 
     Ok((yt_dlp, ffmpeg))
 }
@@ -74,13 +64,13 @@ async fn download_video(
         let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
         format!("video_{}.mp4", timestamp)
     });
-    // Download v`ideo
+    // Download video
     let video_path = fetcher.download_video_from_url(url, final_filename).await?;
 
     println!("Video downloaded successfully!");
     println!("Saved to: {:?}", video_path);
 
-    // Show file inf
+    // Show file info
     if let Ok(metadata) = fs::metadata(&video_path) {
         let size_bytes = metadata.len();
         let size_mb = size_bytes as f64 / 1024.0 / 1024.0;
@@ -101,36 +91,40 @@ async fn main() {
     let cli = Cli::parse();
 
     if cli.download {
-        // Check if dependencies already installed before  downloading
-        if !check_dependencies() {
-            eprintln!("Dependencies not found!");
-            eprintln!("Please install:");
-            eprintln!("- yt-dlp (https://github.com/yt-dlp/yt-dlp)");
-            eprintln!("- ffmpeg (https://ffmpeg.org)");
-            eprintln!("And make sure they're in your PATH.");
-            return;
-        }
-        // Get URL
-        let url = if let Some(url) = cli.url {
-            url
-        } else {
-            let mut input = String::new();
-            println!("Enter YouTube video URL:");
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Error while reading url line");
-            input.trim().to_string()
-        };
+        // Check if dependencies already installed before downloading
+        match check_dependencies() {
+            Ok((_yt_dlp, _ffmpeg_path)) => {
+                // Get URL
+                let url = if let Some(url) = cli.url {
+                    url
+                } else {
+                    let mut input = String::new();
+                    println!("Enter YouTube video URL:");
+                    io::stdin()
+                        .read_line(&mut input)
+                        .expect("Error while reading url line");
+                    input.trim().to_string()
+                };
 
-        if url.is_empty() {
-            eprintln!("URL cannot be empty");
-            return;
-        }
+                if url.is_empty() {
+                    eprintln!("URL cannot be empty");
+                    return;
+                }
 
-        // Download video
-        match download_video(url, cli.output_dir, cli.filename).await {
-            Ok(_) => println!("Download Complete!"),
-            Err(e) => eprintln!("Error: {}", e),
+                // Download video
+                match download_video(url, cli.output_dir, cli.filename).await {
+                    Ok(_) => println!("Download Complete!"),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                eprintln!("Please install:");
+                eprintln!("- yt-dlp (https://github.com/yt-dlp/yt-dlp)");
+                eprintln!("- ffmpeg (https://ffmpeg.org)");
+                eprintln!("And make sure they're in your PATH.");
+                return;
+            }
         }
     } else {
         // Show help
